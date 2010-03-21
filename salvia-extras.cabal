@@ -1,5 +1,5 @@
 Name:             salvia-extras
-Version:          0.3.0
+Version:          1.0.0
 Description:      Collection of non-fundamental handlers for the Salvia web server.
 Synopsis:         Collection of non-fundamental handlers for the Salvia web server.
 Category:         Network, Web
@@ -17,8 +17,8 @@ Library
   Build-Depends:    base ==4.*,
                     clevercss ==0.1.*,
                     bytestring ==0.9.*,
-                    salvia ==0.3.*,
-                    salvia-protocol ==0.1.*,
+                    salvia ==1.0.*,
+                    salvia-protocol ==1.0.*,
                     transformers ==0.1.*,
                     fclabels ==0.4.*,
                     hscolour ==1.15.*,
