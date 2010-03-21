@@ -31,6 +31,9 @@ hFileStoreFile fs author _ =
      u <- request (getM asUri)
      let p = mkRelative (get path u)
          q = get query u
+     -- Default content type to text/plain, and override in hLatest
+     -- and hRetrieve.
+     response (contentType =: Just ("text/plain", Nothing))
 
      -- REST based routing.
      case (p, m, q) of
@@ -65,7 +68,7 @@ hIndex fs = run (index fs) (intercalate "\n")
 
 hSearch :: F m => FileStore -> String -> m ()
 hSearch fs q =
-  do run (search fs sq) showMatches
+  run (search fs sq) showMatches
   where showMatches = intercalate "\n" . map showMatch
         showMatch (SearchMatch f n l) = intercalate ":" [f, show n, l]
         sq = defaultSearchQuery
@@ -76,10 +79,14 @@ hSearch fs q =
                }
 
 hRetrieve :: F m => FileStore -> FilePath -> String -> m ()
-hRetrieve fs p q = run (retrieve fs p (if null q then Nothing else Just q)) id
+hRetrieve fs p q =
+  do response (contentType =: Just (fileMime p, Nothing))
+     run (retrieve fs p (if null q then Nothing else Just q)) id
 
 hLatest :: F m => FileStore -> FilePath -> m ()
-hLatest fs p = run (latest fs p) id
+hLatest fs p =
+  do response (contentType =: Just (fileMime p, Nothing))
+     run (latest fs p) id
 
 hSave :: F m => FileStore -> FilePath -> Description -> Author -> m ()
 hSave fs p q author =
