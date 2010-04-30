@@ -53,7 +53,7 @@ hCgiEnv :: (FlushM Response m, MonadIO m, QueueM m, HttpM' m, HandleM m) => m a 
 hCgiEnv handler =
   do hBanner "salvia-httpd"
      _ <- hHead handler
-     h <- handle
+     h <- handleOut
      st <- response (getM status)
      liftIO $ hPutStr h (intercalate " " ["Status:", show (codeFromStatus st), show st] ++ "\r\n")
      hFlushHeadersOnly forResponse
@@ -89,7 +89,8 @@ start prefix handler pyld =
        , _cRawRequest  = req
        , _cRawResponse = emptyResponse
        , _cSocket      = error "No socket available in CGI mode."
-       , _cHandle      = stdout
+       , _cHandleIn    = stdin
+       , _cHandleOut   = stdout
        , _cClientAddr  = addrAddress (head ca)
        , _cServerAddr  = addrAddress (head sa)
        , _cQueue       = []
