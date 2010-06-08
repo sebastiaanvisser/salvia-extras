@@ -1,12 +1,12 @@
 Name:             salvia-extras
-Version:          1.1.0
+Version:          1.2.0
 Description:      Collection of non-fundamental handlers for the Salvia web server.
 Synopsis:         Collection of non-fundamental handlers for the Salvia web server.
 Category:         Network, Web
 License:          BSD3
 License-file:     LICENSE
 Author:           Sebastiaan Visser
-Maintainer:       sfvisser@cs.uu.nl
+Maintainer:       haskell@fvisser.nl
 Cabal-version:    >= 1.6
 Build-Type:       Simple
 
@@ -17,10 +17,10 @@ Library
   Build-Depends:    base ==4.*,
                     clevercss ==0.1.*,
                     bytestring ==0.9.*,
-                    salvia ==1.1.*,
-                    salvia-protocol ==1.0.*,
+                    salvia ==1.2.*,
+                    salvia-protocol ==1.1.*,
                     transformers ==0.1.*,
-                    fclabels ==0.4.*,
+                    fclabels ==1.0.*,
                     hscolour ==1.15.*,
                     text >= 0.5 && < 0.8,
                     old-locale ==1.0.*,

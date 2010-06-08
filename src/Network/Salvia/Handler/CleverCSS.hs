@@ -8,7 +8,7 @@ where
 
 import Control.Applicative
 import Control.Monad.State
-import Data.Record.Label hiding (get)
+import Data.Record.Label
 import Network.Protocol.Uri
 import Network.Protocol.Http
 import Network.Salvia

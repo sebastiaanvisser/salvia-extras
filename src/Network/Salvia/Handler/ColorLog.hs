@@ -10,7 +10,7 @@ where
 import Control.Applicative
 import Control.Monad.State
 import Data.List
-import Data.Record.Label hiding (get)
+import Data.Record.Label
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.LocalTime

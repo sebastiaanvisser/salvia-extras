@@ -29,8 +29,8 @@ hFileStoreFile
 hFileStoreFile fs author _ =
   do m <- request (getM method)
      u <- request (getM asUri)
-     let p = mkRelative (get path u)
-         q = get query u
+     let p = mkRelative (getL path u)
+         q = getL query u
      -- Default content type to text/plain, and override in hLatest
      -- and hRetrieve.
      response (contentType =: Just ("text/plain", Nothing))
@@ -51,7 +51,7 @@ hFileStoreDirectory
   => FileStore -> FilePath -> m ()
 hFileStoreDirectory fs _ =
   do u <- request (getM asUri)
-     let p = mkRelative (get path u)
+     let p = mkRelative (getL path u)
      run (directory fs p) (intercalate "\n" . map showFS)
   where showFS (FSFile      f) = f
         showFS (FSDirectory d) = d ++ "/"
