@@ -1,7 +1,14 @@
 {-# LANGUAGE FlexibleContexts, TypeOperators #-}
 module Network.Salvia.Handler.CrossDomain
-( hCrossDomainAny
-, hCrossDomain
+(
+
+-- * Cross domain XmlHttpRequests handlers.
+
+  hCrossDomain
+, hCrossDomainAny
+
+-- * Custom request and response headers specialized for cross domain requests.
+
 , accessControlAllowOrigin
 , accessControlRequestMethod
 , accessControlRequestHeaders
@@ -11,16 +18,23 @@ module Network.Salvia.Handler.CrossDomain
 )
 where
 
+import Control.Applicative
 import Data.List
 import Data.Record.Label
 import Network.Salvia
 
-hCrossDomainAny :: (HttpM' m, SendM m) => m () -> m ()
-hCrossDomainAny = hCrossDomain (const True) methods (3600 * 24) (hError Forbidden)
+-- | Handler to ensure browser some specific domains may perform cross-domain
+-- requests to this handler. See the `Cross-Origin Resource Sharing' working
+-- draft at http://www.w3.org/TR/cors/.
 
 hCrossDomain
   :: HttpM' m
-  => (String -> Bool) -> [Method] -> Integer -> m () -> m () -> m ()
+  => (String -> Bool)  -- ^ A function to validate the origin domain.
+  -> [Method]          -- ^ A list of allowed HTTP request methods.
+  -> Integer           -- ^ The number of seconds this response remains valid.
+  -> m ()              -- ^ A handler to run when no access is granted.
+  -> m ()              -- ^ The fall through handler.
+  -> m ()
 hCrossDomain validate meths maxAge onerr =
   hMethod OPTIONS indirect . direct
   where
@@ -35,6 +49,7 @@ hCrossDomain validate meths maxAge onerr =
       do orig <- request (getM origin)
          case orig of
            Just o | not (validate o) -> onerr
+           Just o                    -> h <* setHeaders (Just o)
            _                         -> h
 
     setHeaders orig = response $
@@ -42,7 +57,10 @@ hCrossDomain validate meths maxAge onerr =
          accessControlAllowMethods =: Just (intercalate ", " (map show meths))
          accessControlMaxAge       =: Just (show maxAge)
 
--- | Custom request and response headers specialized for cross domain requests.
+-- | Like `hCrossDomain' but allow all hosts and timeout in one day exactly.
+
+hCrossDomainAny :: (HttpM' m, SendM m) => m () -> m ()
+hCrossDomainAny = hCrossDomain (const True) methods (3600 * 24) (hError Forbidden)
 
 accessControlAllowOrigin :: Http a :-> Maybe Value
 accessControlAllowOrigin = header "Access-Control-Allow-Origin"
