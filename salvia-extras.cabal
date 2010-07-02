@@ -39,6 +39,7 @@ Library
 
   Other-Modules:    Util.Terminal
   Exposed-modules:  Network.Salvia.Handler.CleverCSS,
+                    Network.Salvia.Handler.CrossDomain
                     Network.Salvia.Handler.ColorLog
                     Network.Salvia.Handler.ExtendedFileSystem,
                     Network.Salvia.Handler.FileStore
