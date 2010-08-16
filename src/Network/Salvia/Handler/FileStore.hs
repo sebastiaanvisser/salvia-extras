@@ -1,5 +1,19 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, UndecidableInstances #-}
-module Network.Salvia.Handler.FileStore (hFileStore, hFileStoreFile, hFileStoreDirectory) where
+module Network.Salvia.Handler.FileStore
+( Router (..)
+, defaultRouter
+, hFileStore
+, hFileStoreFile
+, hDir
+, hIndex
+, hSearch
+, hRetrieve
+, hLatest
+, hSave
+, hDelete
+, hHistory
+)
+where
 
 import Control.Exception
 import Control.Monad.Trans
@@ -13,55 +27,76 @@ import Network.Salvia.Handlers
 import Network.Salvia.Interface
 import qualified Network.Protocol.Http as Http
 
+data Router m = Router
+  { rtIndex     ::                                      m ()
+  , rtDirectory :: String                            -> m ()
+  , rtSearch    :: String                            -> m ()
+  , rtHistory   :: FilePath                          -> m ()
+  , rtLatest    :: FilePath                          -> m ()
+  , rtRetrieve  :: FilePath -> String                -> m ()
+  , rtSave      :: FilePath -> Description -> Author -> m ()
+  , rtDelete    :: FilePath -> Description -> Author -> m ()
+  , rtError     :: m ()
+  }
+
+defaultRouter :: (MonadIO m, BodyM Request m, HttpM' m, SendM m) => FileStore -> Router m
+defaultRouter fs = Router
+  { rtIndex     = hIndex fs
+  , rtDirectory = hDir fs
+  , rtSearch    = hSearch fs
+  , rtHistory   = hHistory fs
+  , rtLatest    = hLatest fs
+  , rtRetrieve  = hRetrieve fs
+  , rtSave      = hSave fs
+  , rtDelete    = hDelete fs
+  , rtError     = hError Http.NotFound
+  }
+
 -- Top level filestore server.
 
 hFileStore
   :: (MonadIO m, BodyM Request m, HttpM' m, SendM m)
-  => FileStore -> Author -> FilePath -> m ()
-hFileStore fs author =
-  hFileTypeDispatcher
-    (hFileStoreDirectory fs)
-    (hFileStoreFile fs author)
+  => Router m -> Author -> FilePath -> m ()
+hFileStore rt author = hFileTypeDispatcher (rtDirectory rt) (hFileStoreFile rt author)
 
 hFileStoreFile
   :: (MonadIO m, BodyM Request m, HttpM' m, SendM m)
-  => FileStore -> Author -> FilePath -> m ()
-hFileStoreFile fs author _ =
+  => Router m -> Author -> FilePath -> m ()
+hFileStoreFile rt author _ =
   do m <- request (getM method)
      u <- request (getM asUri)
      let p = mkRelative (getL path u)
          q = getL query u
-     -- Default content type to text/plain, and override in hLatest
-     -- and hRetrieve.
+
+     -- Default content type to text/plain, and override in hLatest and
+     -- hRetrieve.
      response (contentType =: Just ("text/plain", Nothing))
 
      -- REST based routing.
      case (p, m, q) of
-       ("index",  GET,    _        ) -> hIndex     fs
-       ("search", GET,    _        ) -> hSearch    fs q
-       (_,        GET,    "history") -> hHistory   fs p
-       (_,        GET,    "latest" ) -> hLatest    fs p
-       (_,        GET,    _        ) -> hRetrieve  fs p q
-       (_,        PUT,    _        ) -> hSave      fs p q author
-       (_,        DELETE, _        ) -> hDelete    fs p q author
+       ("index",  GET,    _        ) -> rtIndex     rt
+       ("search", GET,    _        ) -> rtSearch    rt q
+       (_,        GET,    "history") -> rtHistory   rt p
+       (_,        GET,    "latest" ) -> rtLatest    rt p
+       (_,        GET,    _        ) -> rtRetrieve  rt p q
+       (_,        PUT,    _        ) -> rtSave      rt p q author
+       (_,        DELETE, _        ) -> rtDelete    rt p q author
        _                             -> hError Http.NotFound
-
-hFileStoreDirectory
-  :: (MonadIO m, BodyM Request m, HttpM' m, SendM m)
-  => FileStore -> FilePath -> m ()
-hFileStoreDirectory fs _ =
-  do u <- request (getM asUri)
-     let p = mkRelative (getL path u)
-     run (directory fs p) (intercalate "\n" . map showFS)
-  where showFS (FSFile      f) = f
-        showFS (FSDirectory d) = d ++ "/"
 
 -- Type class alias.
 
 class    (MonadIO m, BodyM Request m, HttpM' m, SendM m) => F m where
 instance (MonadIO m, BodyM Request m, HttpM' m, SendM m) => F m
 
--- Specific filestore handlers.
+-- Specific filestore operations.
+
+hDir :: F m => FileStore -> FilePath -> m ()
+hDir fs _ =
+  do u <- request (getM asUri)
+     let p = mkRelative (getL path u)
+     run (directory fs p) (intercalate "\n" . map showFS)
+  where showFS (FSFile      f) = f
+        showFS (FSDirectory d) = d ++ "/"
 
 hIndex :: F m => FileStore -> m ()
 hIndex fs = run (index fs) (intercalate "\n")
@@ -96,11 +131,15 @@ hSave fs p q author =
 hDelete :: F m => FileStore -> FilePath -> Description -> Author -> m ()
 hDelete fs p q author = run (delete fs p author q) (const "document deleted\n")
 
-hHistory :: F m => FileStore -> FilePath -> m ()
-hHistory fs p =
-  run (history fs [p] (TimeRange Nothing Nothing)) showHistory
-  where showHistory = intercalate "\n" . map showRevision
-        showRevision (Revision i d a s _) = intercalate "," [i, show d, showAuthor a, s]
+hHistory :: (SendM m, MonadIO m, BodyM Request m, HttpM' m) => FileStore -> FilePath -> m ()
+hHistory fs p = getHistory fs p >>= either fsError (send . showHistory) 
+
+getHistory :: (Exception e, F m) => FileStore -> FilePath -> m (Either e [Revision])
+getHistory fs p = (liftIO . try) (history fs [p] (TimeRange Nothing Nothing))
+
+showHistory :: [Revision] -> String
+showHistory = intercalate "\n" . map showRevision
+  where showRevision (Revision i d a s _) = intercalate "," [i, show d, showAuthor a, s]
         showAuthor (Author n e) = n ++ " <" ++ e ++ ">"
 
 -- Helper functions.
@@ -111,6 +150,9 @@ run action f =
      case e of
        Left err  -> hCustomError (mkError err) (show err)
        Right res -> send (f res)
+
+fsError :: (HttpM Response m, SendM m) => FileStoreError -> m ()
+fsError err = hCustomError (mkError err) (show err)
 
 mkError :: FileStoreError -> Status
 mkError RepositoryExists     = Http.BadRequest
