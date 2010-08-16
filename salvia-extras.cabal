@@ -20,7 +20,7 @@ Library
                     salvia ==1.2.*,
                     salvia-protocol ==1.1.*,
                     transformers < 0.3,
-                    fclabels ==1.0.*,
+                    fclabels ==0.9.*,
                     hscolour ==1.15.*,
                     text >= 0.5 && < 0.8,
                     old-locale ==1.0.*,
