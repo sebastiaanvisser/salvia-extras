@@ -21,7 +21,7 @@ newtype C10kHandler p a = C10kHandler (Handler p a)
   , ClientAddressM 
   , FlushM Request 
   , FlushM Response 
-  , ForkM IO
+  , ForkableMonad
   , Functor 
   , HandleM 
   , HttpM Request 

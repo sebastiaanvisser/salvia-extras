@@ -30,12 +30,10 @@ Library
                     monads-fd < 0.2,
                     stm ==2.1.*,
                     HStringTemplate ==0.6.*,
-                    sendfile ==0.6.*,
+                    sendfile >=0.6 && < 0.8,
                     utf8-string ==0.3.*,
                     c10k ==0.2.0,
-                    pureMD5 ==1.0.*,
-                    split ==0.1.*,
-                    threadmanager ==0.1.*
+                    split ==0.1.*
 
   Other-Modules:    Util.Terminal
   Exposed-modules:  Network.Salvia.Handler.CleverCSS,

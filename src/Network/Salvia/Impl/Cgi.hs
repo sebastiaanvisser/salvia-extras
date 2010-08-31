@@ -44,7 +44,7 @@ newtype CgiHandler p a = CgiHandler (Handler p a)
   , RawHttpM Request 
   , RawHttpM Response 
   , SendM 
-  , ForkM IO
+  , ForkableMonad
   , ServerAddressM 
   , ServerM 
   )
