@@ -3,6 +3,7 @@ module Network.Salvia.Impl.C10k where
 
 import Data.Monoid
 import Control.Monad.State
+import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Applicative
 import Network.C10kServer
 import Network.Protocol.Http hiding (accept, hostname)
@@ -28,6 +29,7 @@ newtype C10kHandler p a = C10kHandler (Handler p a)
   , HttpM Response 
   , Monad
   , MonadIO 
+  , MonadCatchIO
   , MonadPlus 
   , Monoid
   , QueueM 

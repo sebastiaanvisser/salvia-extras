@@ -9,6 +9,7 @@ where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Monad.Trans
 import Data.List
 import Data.Maybe
@@ -37,6 +38,7 @@ newtype CgiHandler p a = CgiHandler (Handler p a)
   , HttpM Response 
   , Monad
   , MonadIO 
+  , MonadCatchIO
   , MonadPlus 
   , Monoid
   , HandleQueueM 
